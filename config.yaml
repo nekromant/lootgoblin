@@ -1,0 +1,82 @@
+freepbx: 
+  url: https://downloads.freepbxdistro.org/ISO/
+  pattern: SNG7-PBX16-64bit-{version}.iso
+  constraints: 
+    version: "latest"
+
+virtio:
+  url: https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/
+  maxdepth: 2
+  pattern: virtio-win-{version}.iso
+  constraints:
+    version: latest
+
+bliss:
+    # Specify one (str) or more (list) base URLs to look for iso images
+    url: https://sourceforge.net/projects/blissos-x86/files/Official/
+    # Filename pattern. The pattern may have constraints applied via constraints section
+    pattern: Bliss-v{version}-{arch}-OFFICIAL-{flavor}-{date}.iso
+    # Allow to follow the links in search of iso images. The depth will be limited
+    maxdepth: 3 
+    # Only iso URLs containing one of the following strings will be considered
+    consider_paths:
+      - /FOSS/Generic
+    # URLs having these in them will be totally avoided. Can be used to speed up
+    # recursive iso lookup
+    avoid_paths:
+      - /Gapps
+      - /Vanilla
+      - /Surface
+      - /stats
+      - /OpenGApps
+      - /Archive
+    # Specify the date format used in filenames (Used only when {date} present in pattern) 
+    dateformat: "%Y%m%d"
+    # Apply constraints to the parsed format. {date} and {version} are special, if present
+    # You can specify special keyword 'latest'
+    # version is compared using python's packaging.version module
+    # date are the same, except every considered version may have a different 'latest' date  
+    constraints:
+      arch: 
+          - x86_64
+      flavor: foss
+      version: latest
+      date: latest
+
+
+gparted:
+    url: https://gparted.org/download.php
+    pattern: gparted-live-{version}-{patchlevel:d}-{arch}.iso
+    constraints:
+      arch: 
+          - amd64
+          - i386
+      version: latest
+
+freebsd:
+    url: https://download.freebsd.org/releases/amd64/amd64/ISO-IMAGES/
+    maxdepth: 2
+    pattern: FreeBSD-{version}-RELEASE-{arch}-{type}.iso 
+    constraints:
+      type: disc1
+      arch: 
+          - amd64
+          - i386
+      version: latest
+    
+debian:
+    url: 
+      - https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/
+      - https://cdimage.debian.org/debian-cd/current/i386/iso-cd/
+    pattern: debian-{version}-{arch}-{type}.iso
+    constraints:
+      type: netinst
+      version: latest
+
+proxmox:
+    url: http://download.proxmox.com/iso/
+    pattern: proxmox-ve_{version}.iso 
+    constraints:
+      version: latest
+
+    

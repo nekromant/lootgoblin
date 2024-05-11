@@ -1,0 +1,140 @@
+= What is it?
+
+LootGoblin is an automated script that looks for latest iso images of your favourite distros and fetches them. 
+This is early alpha quality, so be warned. Goblins ahead ;)
+
+= What is the use-case ?
+
+If you are not a 24/7 sysadmin, but occasionally has to reinstall/fix/disaster-recover systems once or twice a year - you know that the show starts 
+with you fetching the latest iso image before booting the system. With this script you will always have fresh iso images at hand. 
+
+= Can it download Windows? 
+
+No. Since I'm too lazy for NIH syndrome to hit me - use this bash script. 
+
+https://github.com/ElliotKillick/qvm-create-windows-qube/blob/master/windows/isos/mido.sh
+
+Be warned, that MS arseholes not only make it hard to get the latest iso, but also like to blacklist IPs just 'cause they think they don't like you or because of political bullshit.
+
+= Okay, how to use it?
+
+== First steps
+
+The script needs at least a config file passed via _--config myconfig.yaml_. It also accepts --test (that only prints files that would be downloaded) and --destination /where/to/store/iso
+
+Now, open up config.yaml and have a look. Perhaps you distro is already there. If not, here's a simplest config sample:
+
+[source,yaml]
+----
+freepbx: 
+  url: https://downloads.freepbxdistro.org/ISO/
+  pattern: SNG7-PBX16-64bit-{version}.iso
+  constraints: 
+    version: "latest"
+----
+
+Every toplevel section config is a repository to check for files for download.
+
+At most you'll need a _url_ for the page with iso listing and the _pattern_. Pattern follows the python's 'parse' module conventions. After parsing available ISOs, constraints are applied for every variable in constraints section. These can be used to filter actual files for download.
+In this example we only use _version_ constraint. Setting it to _latest_ tells the script to find out the latest version available.
+
+Now run lootgoblin.py --config myconfig.yaml --test. You will see something like this:
+----
+necromant@moonshadow:~/Projects/latest_iso/lootgoblin$ python3 lootgoblin.py --config myconfig.yaml --test
+Fetching file listing: https://downloads.freepbxdistro.org/ISO/
+    
+Config section 'freepbx'
+  https://downloads.freepbxdistro.org/ISO/SNG7-PBX16-64bit-2306-1.iso
+necromant@moonshadow:~/Projects/latest_iso/lootgoblin$ 
+----
+
+If these are the ISO's you want, things are going well.
+
+== Handling subfolders
+
+Sometimes listings have subfolders you have to traverse to. You can use _maxdepth_ for that. 
+
+WARNING: This logic is very hacky right now, and it doesn't check content-type when fetching index files. Just a file extension blacklist. Tripple check that it won't try to fetch huge file as an index file. This should be fixed ASAP in future versions.
+
+Here's a simple example:
+
+[source,yaml]
+----
+virtio:
+  url: https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/
+  maxdepth: 2
+  pattern: virtio-win-{version}.iso
+  constraints:
+    version: latest
+----
+
+== Handling multiple architectures
+
+Constraints can have a list of valid values. gparted live is a good example. Here we download amd64 and i386 images.
+
+[source,yaml]
+----
+gparted:
+    url: https://gparted.org/download.php
+    pattern: gparted-live-{version}-{patchlevel:d}-{arch}.iso
+    constraints:
+      arch: 
+          - amd64
+          - i386
+      version: latest
+----
+
+== Handling build dates, excluding paths and other magic
+
+Constraints can get difficult, if ISOs of the same version have _date_ fields. Just like _version_, these can have 'latest'. But for these to work you'll also have to provide date format. Apparently, since date parsing in python's _parse_ turned out to be broken, date format is provided in a separate section. 
+
+Here's an example for BlissOS ISO images, that have so far been the most difficult to implement:
+
+[source,yaml]
+----
+bliss:
+    # Specify one (str) or more (list) base URLs to look for iso images
+    url: https://sourceforge.net/projects/blissos-x86/files/Official/
+    # Filename pattern. The pattern may have constraints applied via constraints section
+    pattern: Bliss-v{version}-{arch}-OFFICIAL-{flavor}-{date}.iso
+    # Allow to follow the links in search of iso images. The depth will be limited
+    maxdepth: 3 
+    # Only iso URLs containing one of the following strings will be considered
+    consider_paths:
+      - /FOSS/Generic
+    # URLs having these in them will be totally avoided. Can be used to speed up
+    # recursive iso lookup
+    avoid_paths:
+      - /Gapps
+      - /Vanilla
+      - /Surface
+      - /stats
+      - /OpenGApps
+      - /Archive
+    # Specify the date format used in filenames (Used only when {date} present in pattern) 
+    dateformat: "%Y%m%d"
+    # Apply constraints to the parsed format. {date} and {version} are special, if present
+    # You can specify special keyword 'latest'
+    # version is compared using python's packaging.version module
+    # date are the same, except every considered version may have a different 'latest' date  
+    constraints:
+      arch: 
+          - x86_64
+      flavor: foss
+      version: latest
+      date: latest
+----
+
+= TODO
+
+* [x] Put it up on github
+* [ ] Write pyproject.toml and upload to pypi
+* [ ] Refactor ISOTreasury() class and move some logic into Artifact() class
+* [ ] Make it actually check content-type header instead of blacklisting file extensions.
+* [ ] Make it follow robots.txt 
+* [ ] Implement automatic removal of outdated iso images
+* [ ] Add docker container
+
+
+  
+
